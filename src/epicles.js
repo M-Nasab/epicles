@@ -1,7 +1,6 @@
-import { createGear } from "./gear";
-
 const DEFAULT_OPTIONS = {
-    size: 32,
+    period: 32,
+    oscillators: 7,
     initialState: null,
 };
 
@@ -12,47 +11,55 @@ export function epicles (options = {}) {
     };
 
     const {
-        size,
+        period,
+        oscillators,
         initialState,
     } = mergedOptions;
 
-    if (size < 2) {
+    if (period < 2) {
         throw new Error('gear size must be at least 2');
     }
 
-    const gears = [];
+    if (initialState && initialState.length !== period) {
+        throw new Error('initial state length must be equal to period');
+    }
+
+    let state = initialState ? sanetizeState(initialState) : Array(oscillators).fill(0);
     const subscribers = new Map();
 
-    for (let i = 0; i < size; i++) {
-        const cursor = (initialState && initialState[i]) || 0;
-        const gear = createGear(size, cursor);
-        const prevGear = i > 0 ? gears[i - 1] : null;
-
-        if (prevGear) {
-            prevGear.subscribe((cursor) => {
-                if (cursor === 0) {
-                    gear.tick();
-                }
-            });
-        }
-
-        gears.push(gear);
+    function sanetizeState(state) {
+        return state.map((oscillator) => {
+            return oscillator > 0 ? oscillator % period : (period - (Math.abs(oscillator) % period)) % period;
+        });
     }
 
     function getState() {
-        return gears.map((gear) => gear.getState());
+        return [...state];
+    }
+
+    function cyclicIncrement(value) {
+        return (value + 1) % period;
+    }
+
+    function increment(state, index) {
+        const nextState = [...state];
+        nextState[index] = cyclicIncrement(nextState[index]);
+
+        if (nextState[index] === 0 && (index < (state.length - 1))) {
+            return increment(nextState, index + 1);
+        }
+
+        return nextState;
     }
 
     function tick() {
-        if (gears && gears[0]) {
-            gears[0].tick();
+        state = increment(state, 0);
 
-            const state = getState();
+        const emitState = getState();
 
-            subscribers.forEach((subscriber) => {
-                subscriber(state);
-            });
-        }
+        subscribers.forEach((subscriber) => {
+            subscriber(emitState);
+        });
     }
 
     function subscribe (callback) {

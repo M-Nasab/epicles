@@ -25,7 +25,8 @@ describe('epicles', () => {
 
     it('Should emit tick event on ticking', () => {
         const epicle = epicles({
-            size: 5,
+            period: 5,
+            oscillators: 5,
         });
 
         const mockSubscriber = jest.fn();
@@ -59,10 +60,12 @@ describe('epicles', () => {
         expect(mockSubscriber).toHaveBeenCalledTimes(1);
     });
 
-    it('Should `size` argument work as expected', () => {
-        const size = 5;
+    it('Should `period` argument work as expected', () => {
+        const period = 5;
+        const oscillators = 5;
         const epicle = epicles({
-            size,
+            period,
+            oscillators,
         });
 
         const mockSubscriber = jest.fn();
@@ -70,7 +73,7 @@ describe('epicles', () => {
         epicle.subscribe(mockSubscriber);
 
         // tick 5 times
-        for (let i = 0; i < size; i++) {
+        for (let i = 0; i < period; i++) {
             epicle.tick();
         }
 
@@ -83,7 +86,8 @@ describe('epicles', () => {
 
     it('Should accept initial state', () => {
         const epicle = epicles({
-            size: 3,
+            period: 3,
+            oscillators: 3,
             initialState: [1, 2, 0],
         });
         const mockSubscriber = jest.fn();
@@ -101,7 +105,7 @@ describe('epicles', () => {
     it('Should throw error if size is too small', () => {
         const create = () => {
             epicles({
-                size: 1,
+                period: 1,
             });
         };
 
