@@ -15,10 +15,6 @@ export default {
     input: 'src/index.js',
     output: [
         {
-            file: `${destBase}${destExtension}`,
-            format: "cjs"
-        },
-        {
             file: `${destBase}.esm${destExtension}`,
             format: "esm"
         },
@@ -27,16 +23,6 @@ export default {
             format: "umd",
             name,
         },
-        {
-            file: `${destBase}.amd${destExtension}`,
-            format: "amd",
-            name,
-        },
-        {
-            file: `${destBase}.browser${destExtension}`,
-            format: "iife",
-            name,
-        }
     ],
     plugins: [
         commonjs(),
