@@ -30,8 +30,13 @@ export function createGear (size = DEFAULT_SIZE, cursor = 0) {
         return unsubscribe;
     }
 
+    function getState () {
+        return _cursor;
+    }
+
     return {
         tick,
         subscribe,
+        getState,
     };
 }
