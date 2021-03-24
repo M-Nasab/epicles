@@ -87,8 +87,8 @@
   }
 
   var DEFAULT_OPTIONS = {
-    period: 32,
-    oscillators: 7,
+    steps: 32,
+    steppers: 7,
     initialState: null
   };
   function epicles() {
@@ -96,61 +96,75 @@
 
     var mergedOptions = _objectSpread2(_objectSpread2({}, DEFAULT_OPTIONS), options);
 
-    var period = mergedOptions.period,
-        oscillators = mergedOptions.oscillators,
+    var steps = mergedOptions.steps,
+        steppers = mergedOptions.steppers,
         initialState = mergedOptions.initialState;
 
-    if (period < 2) {
-      throw new Error('gear size must be at least 2');
+    if (steps < 2) {
+      throw new Error('step size must be at least 2');
     }
 
-    if (initialState && initialState.length !== period) {
-      throw new Error('initial state length must be equal to period');
+    if (initialState && initialState.length !== steps) {
+      throw new Error('initial state length must be equal to step size');
     }
 
-    var state = initialState ? sanetizeState(initialState) : Array(oscillators).fill(0);
-    var subscribers = new Map();
+    var state = initialState ? sanetizeState(initialState) : Array(steppers).fill(0);
+    var subscribers = [];
 
     function sanetizeState(state) {
-      return state.map(function (oscillator) {
-        return oscillator > 0 ? oscillator % period : (period - Math.abs(oscillator) % period) % period;
+      return state.map(function (stepper) {
+        return stepper > 0 ? stepper % steps : (steps - Math.abs(stepper) % steps) % steps;
       });
-    }
-
-    function getState() {
-      return _toConsumableArray(state);
     }
 
     function cyclicIncrement(value) {
-      return (value + 1) % period;
+      return (value + 1) % steps;
     }
 
-    function increment(state, index) {
-      var nextState = _toConsumableArray(state);
-
-      nextState[index] = cyclicIncrement(nextState[index]);
-
-      if (nextState[index] === 0 && index < state.length - 1) {
-        return increment(nextState, index + 1);
-      }
-
-      return nextState;
-    }
-
-    function tick() {
-      state = increment(state, 0);
-      var emitState = getState();
+    function emitTickEvent(event) {
       subscribers.forEach(function (subscriber) {
-        subscriber(emitState);
+        subscriber(event);
       });
     }
 
+    function increment(state, index) {
+      var tickEvents = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : [];
+
+      var nextState = _toConsumableArray(state);
+
+      nextState[index] = cyclicIncrement(nextState[index]);
+      tickEvents.push({
+        step: nextState[index],
+        stepper: index
+      });
+
+      if (nextState[index] === 0 && index < state.length - 1) {
+        return increment(nextState, index + 1, tickEvents);
+      }
+
+      return {
+        nextState: nextState,
+        tickEvents: tickEvents
+      };
+    }
+
+    function tick() {
+      var _increment = increment(state, 0, []),
+          nextState = _increment.nextState,
+          tickEvents = _increment.tickEvents;
+
+      state = nextState;
+      emitTickEvent(tickEvents);
+    }
+
     function subscribe(callback) {
-      var key = Symbol();
-      subscribers.set(key, callback);
+      if (subscribers.find(callback)) return;
+      subscribers.push(callback);
 
       var unsubscribe = function unsubscribe() {
-        subscribers["delete"](key);
+        subscribers = subscribers.filter(function (subscriber) {
+          return subscriber !== callback;
+        });
       };
 
       return unsubscribe;
