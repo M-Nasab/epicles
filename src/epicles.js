@@ -1,6 +1,6 @@
 const DEFAULT_OPTIONS = {
-    period: 32,
-    oscillators: 7,
+    steps: 32,
+    steppers: 7,
     initialState: null,
 };
 
@@ -11,64 +11,72 @@ export function epicles (options = {}) {
     };
 
     const {
-        period,
-        oscillators,
+        steps,
+        steppers,
         initialState,
     } = mergedOptions;
 
-    if (period < 2) {
-        throw new Error('gear size must be at least 2');
+    if (steps < 2) {
+        throw new Error('step size must be at least 2');
     }
 
-    if (initialState && initialState.length !== period) {
-        throw new Error('initial state length must be equal to period');
+    if (initialState && initialState.length !== steps) {
+        throw new Error('initial state length must be equal to step size');
     }
 
-    let state = initialState ? sanetizeState(initialState) : Array(oscillators).fill(0);
-    const subscribers = new Map();
+    let state = initialState ? sanetizeState(initialState) : Array(steppers).fill(0);
+    let subscribers = [];
 
     function sanetizeState(state) {
-        return state.map((oscillator) => {
-            return oscillator > 0 ? oscillator % period : (period - (Math.abs(oscillator) % period)) % period;
+        return state.map((stepper) => {
+            return stepper > 0 ? stepper % steps : (steps - (Math.abs(stepper) % steps)) % steps;
         });
-    }
-
-    function getState() {
-        return [...state];
     }
 
     function cyclicIncrement(value) {
-        return (value + 1) % period;
+        return (value + 1) % steps;
     }
 
-    function increment(state, index) {
-        const nextState = [...state];
-        nextState[index] = cyclicIncrement(nextState[index]);
-
-        if (nextState[index] === 0 && (index < (state.length - 1))) {
-            return increment(nextState, index + 1);
-        }
-
-        return nextState;
-    }
-
-    function tick() {
-        state = increment(state, 0);
-
-        const emitState = getState();
-
+    function emitTickEvent(event) {
         subscribers.forEach((subscriber) => {
-            subscriber(emitState);
+            subscriber(event);
         });
     }
 
-    function subscribe (callback) {
-        const key = Symbol();
+    function increment(state, index, tickEvents = []) {
+        const nextState = [...state];
+        nextState[index] = cyclicIncrement(nextState[index]);
 
-        subscribers.set(key, callback);
+        tickEvents.push({
+            step: nextState[index],
+            stepper: index,
+        });
+
+        if (nextState[index] === 0 && (index < (state.length - 1))) {
+            return increment(nextState, index + 1, tickEvents);
+        }
+
+        return {
+            nextState,
+            tickEvents,
+        };
+    }
+
+    function tick() {
+        const { nextState, tickEvents } = increment(state, 0, []);
+
+        state = nextState;
+
+        emitTickEvent(tickEvents);
+    }
+
+    function subscribe (callback) {
+        if (subscribers.find(callback)) return;
+
+        subscribers.push(callback);
 
         const unsubscribe = function () {
-            subscribers.delete(key);
+            subscribers = subscribers.filter((subscriber) => subscriber !== callback);
         };
 
         return unsubscribe;

@@ -25,8 +25,8 @@ describe('epicles', () => {
 
     it('Should emit tick event on ticking', () => {
         const epicle = epicles({
-            period: 5,
-            oscillators: 5,
+            steps: 5,
+            steppers: 5,
         });
 
         const mockSubscriber = jest.fn();
@@ -35,12 +35,18 @@ describe('epicles', () => {
         epicle.tick();
 
         expect(mockSubscriber).toHaveBeenCalledTimes(1);
-        expect(mockSubscriber).toHaveBeenCalledWith([1, 0, 0, 0, 0]);
+        expect(mockSubscriber).toHaveBeenCalledWith([{
+            step: 1,
+            stepper: 0,
+        }]);
 
         epicle.tick();
 
         expect(mockSubscriber).toHaveBeenCalledTimes(2);
-        expect(mockSubscriber).toHaveBeenCalledWith([2, 0, 0, 0, 0]);
+        expect(mockSubscriber).toHaveBeenCalledWith([{
+            step: 2,
+            stepper: 0,
+        }]);
     });
 
     it('Should unsubscribe work correctly', () => {
@@ -60,12 +66,12 @@ describe('epicles', () => {
         expect(mockSubscriber).toHaveBeenCalledTimes(1);
     });
 
-    it('Should `period` argument work as expected', () => {
-        const period = 5;
-        const oscillators = 5;
+    it('Should `steps` argument work as expected', () => {
+        const steps = 5;
+        const steppers = 5;
         const epicle = epicles({
-            period,
-            oscillators,
+            steps,
+            steppers,
         });
 
         const mockSubscriber = jest.fn();
@@ -73,39 +79,77 @@ describe('epicles', () => {
         epicle.subscribe(mockSubscriber);
 
         // tick 5 times
-        for (let i = 0; i < period; i++) {
+        for (let i = 0; i < steps; i++) {
             epicle.tick();
         }
 
-        expect(mockSubscriber).nthCalledWith(1, [1, 0, 0, 0, 0]);
-        expect(mockSubscriber).nthCalledWith(2, [2, 0, 0, 0, 0]);
-        expect(mockSubscriber).nthCalledWith(3, [3, 0, 0, 0, 0]);
-        expect(mockSubscriber).nthCalledWith(4, [4, 0, 0, 0, 0]);
-        expect(mockSubscriber).nthCalledWith(5, [0, 1, 0, 0, 0]);
+        expect(mockSubscriber).nthCalledWith(1, [{
+            step: 1,
+            stepper: 0,
+        }]);
+        expect(mockSubscriber).nthCalledWith(2, [{
+            step: 2,
+            stepper: 0,
+        }]);
+        expect(mockSubscriber).nthCalledWith(3, [{
+            step: 3,
+            stepper: 0,
+        }]);
+        expect(mockSubscriber).nthCalledWith(4, [{
+            step: 4,
+            stepper: 0,
+        }]);
+        expect(mockSubscriber).nthCalledWith(5, [
+            {
+                step: 0,
+                stepper: 0,
+            },
+            {
+                step: 1,
+                stepper: 1,
+            }
+        ]);
     });
 
     it('Should accept initial state', () => {
         const epicle = epicles({
-            period: 3,
-            oscillators: 3,
+            steps: 3,
+            steppers: 3,
             initialState: [1, 2, 0],
         });
+
         const mockSubscriber = jest.fn();
         epicle.subscribe(mockSubscriber);
 
         epicle.tick();
         
-        expect(mockSubscriber).nthCalledWith(1, [2, 2, 0]);
+        expect(mockSubscriber).nthCalledWith(1, [{
+            step: 2,
+            stepper: 0,
+        }]);
 
         epicle.tick();
 
-        expect(mockSubscriber).nthCalledWith(2, [0, 0, 1]);
+        expect(mockSubscriber).nthCalledWith(2, [
+            {
+                step: 0,
+                stepper: 0,
+            },
+            {
+                step: 0,
+                stepper: 1,
+            },
+            {
+                step: 1,
+                stepper: 2,
+            }
+        ]);
     });
 
     it('Should throw error if size is too small', () => {
         const create = () => {
             epicles({
-                period: 1,
+                steps: 1,
             });
         };
 
