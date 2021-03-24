@@ -18,19 +18,19 @@ import { epicles } from 'epicles';
 
 // create an emitter with initial state [0, 0, 0]
 const emitter = epicles({
-    period: 4,
-    oscillators: 3,
+    steps: 4,
+    steppers: 3,
 });
 
 emitter.subscribe((event) => {
     console.log(event);
 });
 
-emitter.tick(); // [1, 0, 0]
-emitter.tick(); // [2, 0, 0]
-emitter.tick(); // [3, 0, 0]
-emitter.tick(); // [0, 1, 0]
-emitter.tick(); // [1, 1, 0]
+emitter.tick(); // [{ step: 1, stepper: 0 }]
+emitter.tick(); // [{ step: 2, stepper: 0 }]
+emitter.tick(); // [{ step: 3, stepper: 0 }]
+emitter.tick(); // [{ step: 0, stepper: 0 }, { step: 1, stepper: 1 }]
+emitter.tick(); // [{ step: 1, stepper: 0 }]
 
 ```
 
