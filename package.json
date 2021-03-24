@@ -1,6 +1,6 @@
 {
   "name": "epicles",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "description": "A library for creating gearboxes which are composed of multiple gears and can tick on each time interval and emit tick event on each tick.",
   "main": "dist/bundle.umd.js",
   "module": "dist/bundle.esm.js",
