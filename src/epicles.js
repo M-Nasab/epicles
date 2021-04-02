@@ -82,8 +82,18 @@ export function epicles (options = {}) {
         return unsubscribe;
     }
 
+    function getState() {
+        return state.map((value, index) => {
+            return {
+                stepper: index,
+                step: value,
+            };
+        });
+    }
+
     return {
         tick,
         subscribe,
+        getState,
     };
 }
